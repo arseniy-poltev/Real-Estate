@@ -29,7 +29,8 @@ return [
     |
     */
 
-    'host' => env('MAIL_HOST', 'smtp.mailgun.org'),
+    'host' => env('MAIL_HOST', 'mailtrap.io'),
+
 
     /*
     |--------------------------------------------------------------------------
@@ -41,8 +42,8 @@ return [
     | stay compatible with the Mailgun e-mail application by default.
     |
     */
+    'port' => env('MAIL_PORT', 2525),
 
-    'port' => env('MAIL_PORT', 587),
 
     /*
     |--------------------------------------------------------------------------

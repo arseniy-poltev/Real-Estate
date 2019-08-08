@@ -1368,7 +1368,7 @@
                         <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
                             <div class="google-maps" id="nearby_map"></div>
                         </div>
-                @endif
+                    @endif
                 <!-- 3 Column Services End-->
                     <div class="clearfix"></div>
                 </div>

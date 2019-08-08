@@ -62,39 +62,60 @@
 
 @section('contents')
     @php
-        $project_list = \App\Models\LandedTransaction::getTransactionProjectList($project['Project Name']);
-        $project_detail = \App\Service\GlobalService::getProject($project['Project Name']);
-        $project_list_6_month = $project_list->filter(function ($item){
-                   return \Carbon\Carbon::parse(\App\Service\GlobalService::getNormalDateString($item['Sale Date']))->diffInMonths(\Carbon\Carbon::now()) <= 6;
-             })->values();
-
-        $config_data_josn =  \Illuminate\Support\Facades\Cookie::get(\App\Service\GlobalConstant::REPORT_LANDED_CONFIG_COOKIE);
-            $config_data = json_decode($config_data_josn, true);
-
-
-         $profile_data = \App\Service\LandedService::getBuyerProfileData($project['Project Name']);
-
-
-            $residental_rental = \App\Service\LandedService::getRentalData($project['Project Name']);
-            $residental_rental = $residental_rental->map(function ($item) {
-                if ($item['Floor Area ll']) {
-                 $item['rental'] = $item['Monthly Gross Rent($)']/$item['Floor Area ll'];
-                } else {
-                 $item['rental'] = null;
-                }
-
-                 return $item;
-            });
+           $config_data_josn =  \Illuminate\Support\Facades\Cookie::get(\App\Service\GlobalConstant::REPORT_LANDED_CONFIG_COOKIE);
+               $config_data = json_decode($config_data_josn, true);
+           if ($config_data) {
+               if ($config_data['timeframe']) {
+                   $timeframe = 'Last ' . $config_data['timeframe'] . ' Years';
+               } else {
+                   $timeframe = 'All Years';
+               }
+           } else {
+               $timeframe = 'Last 5 Years';
+           }
 
 
-            $residental_rental_6_month = $residental_rental->filter(function ($item){
-                   return \Carbon\Carbon::parse($item['Lease Commencement Date'])->diffInMonths(\Carbon\Carbon::now()) <= 6;
-             })->values();
+           $project_list = \App\Service\LandedService::getTransactionProjectList($project['Project Name']);
+           $project_detail = \App\Service\GlobalService::getProject($project['Project Name']);
+           $project_list_6_month = $project_list->filter(function ($item){
+                      return \Carbon\Carbon::parse(\App\Service\GlobalService::getNormalDateString($item['Sale Date']))->diffInMonths(\Carbon\Carbon::now()) <= 6;
+                })->values();
 
-            $average_rental = $residental_rental->sortBy('Floor Area (sq ft)')->groupBy('Floor Area (sq ft)')->values();
 
-            $nearby_items = \App\Service\LandedService::getNearByProperties($project['Address']);
-            $nearby_items = \App\Service\GlobalService::getDistanceAndMarker($nearby_items, $project_detail);
+
+            $profile_data = \App\Service\LandedService::getBuyerProfileData($project['Project Name']);
+
+
+           $residental_rental = \App\Service\LandedService::getRentalData($project['Project Name']);
+           $residental_rental = $residental_rental->map(function ($item) {
+               if ($item['Floor Area ll']) {
+                $item['rental'] = $item['Monthly Gross Rent($)']/$item['Floor Area ll'];
+               } else {
+                $item['rental'] = null;
+               }
+
+                return $item;
+           });
+
+
+
+           $residental_rental_6_month = $residental_rental->filter(function ($item){
+                  return \Carbon\Carbon::parse($item['Lease Commencement Date'])->diffInMonths(\Carbon\Carbon::now()) <= 6;
+            })->values();
+
+
+           $average_rental = $residental_rental->sortBy('Floor Area (sq ft)')->groupBy('Floor Area (sq ft)')->values();
+
+           $nearby_items = \App\Service\LandedService::getNearByProperties($project['Address']);
+           $nearby_items = \App\Service\GlobalService::getDistanceAndMarker($nearby_items, $project_detail);
+
+
+            /*if(!isset($config_data) || (isset($config_data) && isset($config_data['hide_unit_numbers']))) {
+                $project_list = $project_list->map(function ($item) {
+
+                });
+            }*/
+
     @endphp
     <!-- Title, Breadcrumb Start-->
     <div class="breadcrumb-wrapper">
@@ -117,6 +138,220 @@
         </div>
     </div>
 
+    <!-- Main Content start-->
+    <div class="content">
+        <div class="container">
+            <div class="row">
+                <div class="posts-block col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                    <article>
+                        <h3 class="title">Overview</h3>
+                        <div class="post-content">
+                            <div class="accordionMod panel-group">
+                                <div class="accordion-item">
+                                    <h4 class="accordion-toggle">CONFIGURE REPORT</h4>
+                                    <section class="accordion-inner panel-body form-horizontal configure_panel">
+                                        <form method="POST"
+                                              action="{{ url('trends-and-analysis/landed/report/refresh_setting') }}"
+                                              class="report_setting_form">
+                                            @csrf
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-2 text-left label_item">1. TIME
+                                                    PERIOD:</label>
+                                                <div class="col-sm-2">
+                                                    <select id="timeframe" name="timeframe"
+                                                            class="form-control input-sm">
+                                                        <option value="">All data</option>
+                                                        <option value="10">Last 10 years</option>
+                                                        <option value="9">Last 9 years</option>
+                                                        <option value="8">Last 8 years</option>
+                                                        <option value="7">Last 7 years</option>
+                                                        <option value="6">Last 6 years</option>
+                                                        <option value="5"  selected>Last 5 years</option>
+                                                        <option value="4">Last 4 years</option>
+                                                        <option value="3">Last 3 years</option>
+                                                        <option value="2">Last 2 years</option>
+                                                        <option value="1">Last 1 year</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-4 text-left label_item">2. PROPERTY
+                                                    TYPES:</label>
+
+                                            </div>
+                                            <div class="form-group" style="padding: 0 30px;">
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="detached_house" name="detached_house"
+                                                           @if(isset($config_data) && isset($config_data['detached_house']))
+                                                           {{ $config_data['detached_house'] }}
+                                                           @elseif(isset($config_data) && !isset($config_data['detached_house']))
+                                                           @else checked @endif>
+                                                    <label for="detached_house">Detached House</label>
+                                                </div>
+
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="semi_detached_house" name="semi_detached_house"
+                                                           @if(isset($config_data) && isset($config_data['semi_detached_house'])) {{ $config_data['semi_detached_house'] }} @elseif(isset($config_data) && !isset($config_data['semi_detached_house'])) @else checked @endif>
+                                                    <label for="semi_detached_house">Semi-Detached House</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="terrace_house"
+                                                           name="terrace_house"
+                                                           @if(isset($config_data) && isset($config_data['terrace_house'])) {{ $config_data['terrace_house'] }} @elseif(isset($config_data) && !isset($config_data['terrace_house'])) @else checked @endif>
+                                                    <label for="terrace_house">Terrace House</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label class="control-label text-left label_item">3. INFORMATION TO
+                                                    INCLUDE: </label>
+                                            </div>
+                                            <div class="form-group" style="padding: 0 30px;">
+                                                {{--<div class="col-md-3 col-sm-3 checkbox">--}}
+                                                    {{--<input type="checkbox" id="developer_sales" name="developer_sales"--}}
+                                                           {{--@if(isset($config_data) && isset($config_data['developer_sales']))--}}
+                                                           {{--{{ $config_data['developer_sales'] }}--}}
+                                                           {{--@elseif(isset($config_data) && !isset($config_data['developer_sales']))--}}
+                                                           {{--@else checked @endif>--}}
+                                                    {{--<label for="developer_sales">Developer Sales</label>--}}
+                                                {{--</div>--}}
+
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="buyer_profile" name="buyer_profile"
+                                                           @if(isset($config_data) && isset($config_data['buyer_profile'])) {{ $config_data['buyer_profile'] }} @elseif(isset($config_data) && !isset($config_data['buyer_profile'])) @else checked @endif>
+                                                    <label for="buyer_profile">Buyer Profile</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="historical_prices_chart"
+                                                           name="historical_prices_chart"
+                                                           @if(isset($config_data) && isset($config_data['historical_prices_chart'])) {{ $config_data['historical_prices_chart'] }} @elseif(isset($config_data) && !isset($config_data['historical_prices_chart'])) @else checked @endif>
+                                                    <label for="historical_prices_chart">Historical
+                                                        Prices(Chart)</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="historical_range_chart"
+                                                           name="historical_range_chart"
+                                                           @if(isset($config_data) && isset($config_data['historical_range_chart'])) {{ $config_data['historical_range_chart'] }} @elseif(isset($config_data) && !isset($config_data['historical_range_chart'])) @else checked @endif>
+                                                    <label for="historical_range_chart">Historical Range(Chart)</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="profitable_transactions"
+                                                           name="profitable_transactions"
+                                                           @if(isset($config_data) && isset($config_data['profitable_transactions'])) {{ $config_data['profitable_transactions'] }} @elseif(isset($config_data) && !isset($config_data['profitable_transactions'])) @else checked @endif>
+                                                    <label for="profitable_transactions">Profitable Transactions</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="unprofitable_transactions"
+                                                           name="unprofitable_transactions"
+                                                           @if(isset($config_data) && isset($config_data['unprofitable_transactions'])) {{ $config_data['unprofitable_transactions'] }} @elseif(isset($config_data) && !isset($config_data['unprofitable_transactions'])) @else checked @endif>
+                                                    <label for="unprofitable_transactions">Unprofitable
+                                                        Transactions</label>
+                                                </div>
+
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="rental_contracts" name="rental_contracts"
+                                                           @if(isset($config_data) && isset($config_data['rental_contracts'])) {{ $config_data['rental_contracts'] }} @elseif(isset($config_data) && !isset($config_data['rental_contracts'])) @else checked @endif>
+                                                    <label for="rental_contracts">Rental Contracts</label>
+                                                </div>
+
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="quanterly_rental" name="quanterly_rental"
+                                                           @if(isset($config_data) && isset($config_data['quanterly_rental'])) {{ $config_data['quanterly_rental'] }} @elseif(isset($config_data) && !isset($config_data['quanterly_rental'])) @else checked @endif>
+                                                    <label for="quanterly_rental">Quarterly Rental</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="street_rental" name="street_rental"
+                                                           @if(isset($config_data) && isset($config_data['street_rental'])) {{ $config_data['street_rental'] }} @elseif(isset($config_data) && !isset($config_data['street_rental'])) @else checked @endif>
+                                                    <label for="street_rental">Street Rental</label>
+                                                </div>
+                                                {{--<div class="col-md-3 col-sm-3 checkbox">--}}
+                                                    {{--<input type="checkbox" id="unit_size_distribution"--}}
+                                                           {{--name="unit_size_distribution"--}}
+                                                           {{--@if(isset($config_data) && isset($config_data['unit_size_distribution'])) {{ $config_data['unit_size_distribution'] }} @elseif(isset($config_data) && !isset($config_data['unit_size_distribution'])) @else checked @endif>--}}
+                                                    {{--<label for="unit_size_distribution">Unit Size Distribution</label>--}}
+                                                {{--</div>--}}
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="nearby_prices_chart"
+                                                           name="nearby_prices_chart"
+                                                           @if(isset($config_data) && isset($config_data['nearby_prices_chart'])) {{ $config_data['nearby_prices_chart'] }} @elseif(isset($config_data) && !isset($config_data['nearby_prices_chart'])) @else checked @endif>
+                                                    <label for="nearby_prices_chart">Nearby Prices (Chart)</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="nearby_rental_chart"
+                                                           name="nearby_rental_chart"
+                                                           @if(isset($config_data) && isset($config_data['nearby_rental_chart'])) {{ $config_data['nearby_rental_chart'] }} @elseif(isset($config_data) && !isset($config_data['nearby_rental_chart'])) @else checked @endif>
+                                                    <label for="nearby_rental_chart">Nearby Rental (Chart)</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="nearby_comparison"
+                                                           name="nearby_comparison"
+                                                           @if(isset($config_data) && isset($config_data['nearby_comparison'])) {{ $config_data['nearby_comparison'] }} @elseif(isset($config_data) && !isset($config_data['nearby_comparison'])) @else checked @endif>
+                                                    <label for="nearby_comparison">Nearby Comparison</label>
+                                                </div>
+                                                <div class="col-md-3 col-sm-3 checkbox">
+                                                    <input type="checkbox" id="historical_transactions"
+                                                           name="historical_transactions"
+                                                           @if(isset($config_data) && isset($config_data['historical_transactions'])) {{ $config_data['historical_transactions'] }} @elseif(isset($config_data) && !isset($config_data['historical_transactions'])) @else checked @endif>
+                                                    <label for="historical_transactions">Historical Transactions</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label class="control-label col-sm-3 text-left label_item">4. HIDE UNIT
+                                                    NUMBERS:</label>
+                                                <div class="col-sm-2">
+                                                    <select id="hide_unit_numbers" name="hide_unit_numbers"
+                                                            class="form-control input-sm">
+                                                        <option value="0" selected="selected">No</option>
+                                                        <option value="1">Yes</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {{--<div class="form-group">--}}
+                                            {{--<label class="control-label col-sm-3 text-left label_item">7. ANONYMISE--}}
+                                            {{--LISTINGS:</label>--}}
+                                            {{--<div class="col-sm-2">--}}
+                                            {{--<select id="anonymise_listings" name="anonymise_listings"--}}
+                                            {{--class="form-control input-sm">--}}
+                                            {{--<option value="0" selected="selected">No</option>--}}
+                                            {{--<option value="1">Yes</option>--}}
+                                            {{--</select>--}}
+                                            {{--</div>--}}
+                                            {{--</div>--}}
+
+                                            <div class="form-group">
+                                                <label class="control-label text-left label_item">
+                                                    <button type="submit" class="btn btn-sm btn-primary"
+                                                            id="refresh_report">REFRESH REPORT
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-success"
+                                                            id="printer_friendly">
+                                                        PRINTER FRIENDLY
+                                                    </button>
+                                                    <a type="button" class="btn btn-sm btn-danger"
+                                                       id="print_to_pdf"
+                                                       href="{{ url('/trends-and-analysis/residential/report/pdf?p=' . $project['Project Name']) }}">PRINTER
+                                                        TO PDF
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-info"
+                                                            id="save_report_settings">SAVE REPORT SETTINGS
+                                                    </button>
+                                                </label>
+                                            </div>
+                                        </form>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="divider"></div>
     <!-- Project Information -->
     <div class="services-big">
         <div class="container">
@@ -392,7 +627,7 @@
                                         @foreach($profit_list as $item)
                                             <tr>
                                                 <td>{{ $item['sold_on'] }}</td>
-                                                <td>{{ $item['Address'] }}</td>
+                                                <td>{{ $item['Address_filtered'] }}</td>
                                                 <td>{{ $item['unit_area'] }}</td>
                                                 <td>{{ $item['sale_price_psf'] }}</td>
                                                 <td>{{ $item['bought_on'] }}</td>
@@ -440,7 +675,7 @@
                                         @foreach($unprofit_list as $item)
                                             <tr>
                                                 <td>{{ $item['sold_on'] }}</td>
-                                                <td>{{ $item['Address'] }}</td>
+                                                <td>{{ $item['Address_filtered'] }}</td>
                                                 <td>{{ $item['unit_area'] }}</td>
                                                 <td>{{ $item['sale_price_psf'] }}</td>
                                                 <td>{{ $item['bought_on'] }}</td>
@@ -468,7 +703,10 @@
     {{-- End Calculate Profit --}}
 
     {{-- Rental --}}
-    @if(!isset($config_data) || ((isset($config_data) && isset($config_data['profitable_transactions'])) || (isset($config_data) && isset($config_data['reportctrlj']))))
+    @php
+        $historical_rental = \App\Service\LandedService::getHistoricalRental($project['Address']);
+    @endphp
+    @if(!isset($config_data) || ((isset($config_data) && isset($config_data['profitable_transactions'])) || (isset($config_data) && isset($config_data['reportctrlj'])) || (isset($config_data) && isset($config_data['street_rental']))))
         <div class="slogan bottom-pad-small p-t-50 p-b-30">
             <div class="container">
                 <div class="row">
@@ -566,190 +804,190 @@
                             </div>
                         </div>
                     @endif
+
+                    @if(!isset($config_data) || (isset($config_data) && isset($config_data['street_rental'])))
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <h4 class="text-center">Historical rental
+                            along {{ \App\Service\GlobalService::getStreetFromAddress($project['Address'])}}</h4>
+                        <div class="content-box">
+                            {{--<h3 class="text-center">Location</h3>--}}
+
+                            @if(count($historical_rental) > 0)
+                                <table
+                                    class="table-striped table-bordered table minimalist datatable-component datatable-component"
+                                    width="100%">
+                                    <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Street</th>
+                                        <th>Type</th>
+                                        <th>Lowest Rental (S$ psf pm)</th>
+                                        <th>Rental 25th (S$ psf pm)</th>
+                                        <th>Median Rental (S$ psf pm)</th>
+                                        <th>Rental 75th (S$ psf pm)</th>
+                                        <th>Highest Rental (S$ psf pm)</th>
+                                        <th>Contracts</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach($historical_rental as $item)
+                                        <tr>
+                                            <td>{{ $item['Month'] }}</td>
+                                            <td>{{ $item['Street Name'] }}</td>
+                                            <td>{{ $item['Type'] }}</td>
+                                            <td>{{ $item['Minimum'] }}</td>
+                                            <td>{{ $item['25th Percentile'] }}</td>
+                                            <td>{{ $item['Median'] }}</td>
+                                            <td>{{ $item['75th Percentile'] }}</td>
+                                            <td>{{ $item['Maximum'] }}</td>
+                                            <td>1</td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
     @endif
     {{-- End Rental --}}
 
-    {{-- Get Historical Reantal --}}
-    @php
-        $historical_rental = \App\Service\ResidentialService::getHistoricalRental($project['Address']);
-    @endphp
-    <div class="divider"></div>
-    <div class="slogan bottom-pad-small p-t-50 p-b-30">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                    <h3 class="title">Historical rental</h3>
-                </div>
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                    <h4 class="text-center">Historical rental
-                        along {{ \App\Service\GlobalService::getStreetFromAddress($project['Address'])}}</h4>
-                    <div class="content-box">
-                        {{--<h3 class="text-center">Location</h3>--}}
-
-                        @if(count($historical_rental) > 0)
-                            <table
-                                class="table-striped table-bordered table minimalist datatable-component datatable-component"
-                                width="100%">
-                                <thead>
-                                <tr>
-                                    <th>Month</th>
-                                    <th>Street</th>
-                                    <th>Type</th>
-                                    <th>Lowest Rental (S$ psf pm)</th>
-                                    <th>Rental 25th (S$ psf pm)</th>
-                                    <th>Median Rental (S$ psf pm)</th>
-                                    <th>Rental 75th (S$ psf pm)</th>
-                                    <th>Highest Rental (S$ psf pm)</th>
-                                    <th>Contracts</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                @foreach($historical_rental as $item)
-                                    <tr>
-                                        <td>{{ $item['Month'] }}</td>
-                                        <td>{{ $item['Street Name'] }}</td>
-                                        <td>{{ $item['Type'] }}</td>
-                                        <td>{{ $item['Minimum'] }}</td>
-                                        <td>{{ $item['25th Percentile'] }}</td>
-                                        <td>{{ $item['Median'] }}</td>
-                                        <td>{{ $item['75th Percentile'] }}</td>
-                                        <td>{{ $item['Maximum'] }}</td>
-                                        <td>1</td>
-
-                                    </tr>
-                                @endforeach
-                                </tbody>
-                            </table>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {{-- End historical rental --}}
-
-
     {{-- Near By Properties--}}
-    <div class="divider"></div>
-    <div class="slogan bottom-pad-small p-t-50 p-b-30">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                    <h3 class="title"> NEARBY PROPERTIES &nbsp;</h3>
-                </div>
-
-                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
-                    <div class="content-box">
-                        <h4 class="text-center">PRICE COMPARISON (UP TO 50)</h4>
-                        <div id="nearby_price_compare_chart" class="google-maps">
-                        </div>
+    @if(!isset($config_data) || ((isset($config_data) && isset($config_data['nearby_prices_chart'])) || (isset($config_data) && isset($config_data['nearby_rental_chart'])) || (isset($config_data) && isset($config_data['nearby_comparison']))))
+        <div class="divider"></div>
+        <div class="slogan p-t-50 p-b-30">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <h3 class="title"> NEARBY PROPERTIES &nbsp;</h3>
                     </div>
-                </div>
 
-                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
-                    <div class="content-box">
-                        <h4 class="text-center">RENTAL COMPARISON (UP TO 50)</h4>
-                        <div id="nearby_rental_compare_chart" class="google-maps">
+                    @if(!isset($config_data) || (isset($config_data) && isset($config_data['nearby_prices_chart'])))
+                        <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                            <div class="content-box">
+                                <h4 class="text-center">PRICE COMPARISON (UP TO 50)</h4>
+                                <div id="nearby_price_compare_chart" class="google-maps">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    @endif
 
+                    @if(!isset($config_data) || (isset($config_data) && isset($config_data['nearby_rental_chart'])))
+                        <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                            <div class="content-box">
+                                <h4 class="text-center">RENTAL COMPARISON (UP TO 50)</h4>
+                                <div id="nearby_rental_compare_chart" class="google-maps">
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
-                <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-                    <div class="content-box">
-                        <h4 class="text-center">PRICE AND RENTAL COMPARISONS (UP TO 50)</h4>
-                        <table class="table-striped table-bordered table minimalist datatable-component" width="100%">
-                            <thead>
-                            <tr>
-                                <th>Marker</th>
-                                <th>Project</th>
-                                <th>Tenure</th>
-                                <th>Completion</th>
-                                <th>Distance <br>(m)</th>
-                                <th>Lowest price* <br>(S$ psf)</th>
-                                <th>Average price* <br>(S$ psf)</th>
-                                <th>Highest price* <br>(S$ psf)</th>
-                                <th>Lowest rental* <br>(S$ psf pm)</th>
-                                <th>Average rental* <br>(S$ psf pm)</th>
-                                <th>Highest rental* <br>(S$ psf pm)</th>
-                                <th>Rental yield <br>(%)</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr>
-                                <td><img src="{{ asset('img/marker/marker0.png') }}"></td>
-                                <td>{{ $project['Project Name'] }}</td>
-                                <td>{{ $project['Tenure'] }}</td>
-                                <td>{{ $project['Completion Date'] }}</td>
-                                <td>-</td>
-                                <td>{{ round($residental_rental->min('Monthly Gross Rent($)'), 2) }}</td>
-                                <td>{{ round($residental_rental->average('Monthly Gross Rent($)'), 2) }}</td>
-                                <td>{{ round($residental_rental->max('Monthly Gross Rent($)'), 2) }}</td>
-                                <td>{{ round($residental_rental->min('rental'), 2) }}</td>
-                                <td>{{ round($residental_rental->average('rental'), 2) }}</td>
-                                <td>{{ round($residental_rental->max('rental'), 2) }}</td>
-                                @php
-                                    if ($residental_rental->average('Monthly Gross Rent($)')) {
-                                        $rental_yield = round($residental_rental->average('rental')* 12 / $residental_rental->average('Monthly Gross Rent($)') * 100, 2);
-                                    } else {
-                                        $rental_yield = null;
-                                    }
-
-                                    $marker_index = 0;
-                                @endphp
-                                <td>{{ $rental_yield }}</td>
-                            </tr>
-                            @foreach($nearby_items as $item)
-                                @if($item['Project Name'] != $project['Project Name'])
-                                    @php
-                                        $nearby_projects_list = \App\Service\LandedService::getRentalData($item['Project Name']);
-                                        $nearby_projects_list = $nearby_projects_list->map(function($s_item) {
-                                            if ($s_item['Floor Area ll']) {
-                                             $s_item['rental'] = $s_item['Monthly Gross Rent($)']/$s_item['Floor Area ll'];
+                    @if(!isset($config_data) || (isset($config_data) && isset($config_data['nearby_comparison'])))
+                        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                            <div class="content-box">
+                                <h4 class="text-center">PRICE AND RENTAL COMPARISONS (UP TO 50)</h4>
+                                <table class="table-striped table-bordered table minimalist datatable-component"
+                                       width="100%">
+                                    <thead>
+                                    <tr>
+                                        <th>Marker</th>
+                                        <th>Project</th>
+                                        <th>Tenure</th>
+                                        <th>Completion</th>
+                                        <th>Distance <br>(m)</th>
+                                        <th>Lowest price* <br>(S$ psf)</th>
+                                        <th>Average price* <br>(S$ psf)</th>
+                                        <th>Highest price* <br>(S$ psf)</th>
+                                        <th>Lowest rental* <br>(S$ psf pm)</th>
+                                        <th>Average rental* <br>(S$ psf pm)</th>
+                                        <th>Highest rental* <br>(S$ psf pm)</th>
+                                        <th>Rental yield <br>(%)</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td><img src="{{ asset('img/marker/marker0.png') }}"></td>
+                                        <td>{{ $project['Project Name'] }}</td>
+                                        <td>{{ $project['Tenure'] }}</td>
+                                        <td>{{ $project['Completion Date'] }}</td>
+                                        <td>-</td>
+                                        <td>{{ round($residental_rental->min('Monthly Gross Rent($)'), 2) }}</td>
+                                        <td>{{ round($residental_rental->average('Monthly Gross Rent($)'), 2) }}</td>
+                                        <td>{{ round($residental_rental->max('Monthly Gross Rent($)'), 2) }}</td>
+                                        <td>{{ round($residental_rental->min('rental'), 2) }}</td>
+                                        <td>{{ round($residental_rental->average('rental'), 2) }}</td>
+                                        <td>{{ round($residental_rental->max('rental'), 2) }}</td>
+                                        @php
+                                            if ($residental_rental->average('Monthly Gross Rent($)')) {
+                                                $rental_yield = round($residental_rental->average('rental')* 12 / $residental_rental->average('Monthly Gross Rent($)') * 100, 2);
                                             } else {
-                                             $s_item['rental'] = null;
+                                                $rental_yield = null;
                                             }
 
-                                             return $s_item;
-                                        });
-
-                                    if ($nearby_projects_list->average('Monthly Gross Rent($)')) {
-                                        $nearby_projects_list_rental_yield = round($nearby_projects_list->average('rental')* 12 / $nearby_projects_list->average('Monthly Gross Rent($)') * 100, 2);
-                                    } else {
-                                        $nearby_projects_list_rental_yield = null;
-                                    }
-                                    $marker_index ++;
-                                    @endphp
-                                    <tr>
-                                        <td><img src="{{ asset('img/marker/marker' . $marker_index . '.png') }}"></td>
-                                        <td>{{ $item['Project Name'] }}</td>
-                                        <td>{{ $item['Tenure'] }}</td>
-                                        <td>{{ $item['Completion Date'] }}</td>
-                                        <td>{{ $item['distance'] }}</td>
-                                        <td>{{ round($nearby_projects_list->min('Monthly Gross Rent($)'), 2) }}</td>
-                                        <td>{{ round($nearby_projects_list->average('Monthly Gross Rent($)'), 2) }}</td>
-                                        <td>{{ round($nearby_projects_list->max('Monthly Gross Rent($)'), 2) }}</td>
-                                        <td>{{ round($nearby_projects_list->min('rental'), 2) }}</td>
-                                        <td>{{ round($nearby_projects_list->average('rental'), 2) }}</td>
-                                        <td>{{ round($nearby_projects_list->max('rental'), 2) }}</td>
-                                        <td>{{ $nearby_projects_list_rental_yield }}</td>
+                                            $marker_index = 0;
+                                        @endphp
+                                        <td>{{ $rental_yield }}</td>
                                     </tr>
-                                @endif
-                            @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                    @foreach($nearby_items as $item)
+                                        @if($item['Project Name'] != $project['Project Name'])
+                                            @php
+                                                $nearby_projects_list = \App\Service\LandedService::getRentalData($item['Project Name']);
+                                                $nearby_projects_list = $nearby_projects_list->map(function($s_item) {
+                                                    if ($s_item['Floor Area ll']) {
+                                                     $s_item['rental'] = $s_item['Monthly Gross Rent($)']/$s_item['Floor Area ll'];
+                                                    } else {
+                                                     $s_item['rental'] = null;
+                                                    }
 
+                                                     return $s_item;
+                                                });
+
+                                            if ($nearby_projects_list->average('Monthly Gross Rent($)')) {
+                                                $nearby_projects_list_rental_yield = round($nearby_projects_list->average('rental')* 12 / $nearby_projects_list->average('Monthly Gross Rent($)') * 100, 2);
+                                            } else {
+                                                $nearby_projects_list_rental_yield = null;
+                                            }
+                                            $marker_index ++;
+                                            $item['marker'] = "img/marker/marker" . $marker_index . ".png";
+                                            @endphp
+                                            <tr>
+                                                <td><img
+                                                        src="{{ asset('img/marker/marker' . $marker_index . '.png') }}">
+                                                </td>
+                                                <td>{{ $item['Project Name'] }}</td>
+                                                <td>{{ $item['Tenure'] }}</td>
+                                                <td>{{ $item['Completion Date'] }}</td>
+                                                <td>{{ $item['distance'] }}</td>
+                                                <td>{{ round($nearby_projects_list->min('Monthly Gross Rent($)'), 2) }}</td>
+                                                <td>{{ round($nearby_projects_list->average('Monthly Gross Rent($)'), 2) }}</td>
+                                                <td>{{ round($nearby_projects_list->max('Monthly Gross Rent($)'), 2) }}</td>
+                                                <td>{{ round($nearby_projects_list->min('rental'), 2) }}</td>
+                                                <td>{{ round($nearby_projects_list->average('rental'), 2) }}</td>
+                                                <td>{{ round($nearby_projects_list->max('rental'), 2) }}</td>
+                                                <td>{{ $nearby_projects_list_rental_yield }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                            <div class="google-maps" id="nearby_map"></div>
+                        </div>
+                @endif
                 <!-- 3 Column Services End-->
-                <div class="clearfix"></div>
+                    <div class="clearfix"></div>
+                </div>
             </div>
         </div>
-    </div>
+    @endif
     {{-- End Near by Properties--}}
+
 
 @endsection
 

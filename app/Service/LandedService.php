@@ -11,11 +11,96 @@ namespace App\Service;
 
 use App\Models\LandedRental;
 use App\Models\LandedRentalCount;
+use App\Models\LandedRentalPsf;
 use App\Models\LandedTransaction;
 use App\Models\ResidentialNationality;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cookie;
 
 class LandedService
 {
+    private static $config = null;
+
+    public function __construct()
+    {
+        if (Cookie::has(GlobalConstant::REPORT_LANDED_CONFIG_COOKIE)) {
+            $this->config = Cookie::get(GlobalConstant::REPORT_LANDED_CONFIG_COOKIE);
+        }
+    }
+
+    public static function filterProjectList($transaction_list)
+    {
+        $config = Cookie::get(GlobalConstant::REPORT_LANDED_CONFIG_COOKIE);
+        $limit_year = 5;
+
+        if ($config) {
+            $report_config = json_decode($config, true);
+            if ($report_config['timeframe']) {
+                $limit_year = $report_config['timeframe'];
+            } else {
+                $limit_year = null;
+            }
+        }
+
+        if ($limit_year) {
+            $transaction_list = $transaction_list->filter(function ($item) use ($limit_year) {
+                $item_date = GlobalService::getNormalDateString($item['Sale Date']);
+                return Carbon::now()->diffInYears(Carbon::parse($item_date)) <= $limit_year;
+            });
+        }
+
+        if ($config) {
+            $report_config = json_decode($config, true);
+
+            if (!isset($report_config['detached_house'])) {
+                $transaction_list = $transaction_list->filter(function ($item) use ($report_config) {
+                    return $item['Property Type'] != 'Detached House';
+                });
+            }
+
+            if (!isset($report_config['semi_detached_house'])) {
+                $transaction_list = $transaction_list->filter(function ($item) use ($report_config) {
+                    return $item['Property Type'] != 'Semi-Detached House';
+                });
+            }
+
+            if (!isset($report_config['terrace_house'])) {
+                $transaction_list = $transaction_list->filter(function ($item) use ($report_config) {
+                    return $item['Property Type'] != 'Terrace House';
+                });
+            }
+        }
+
+        if ($config) {
+            $report_config = json_decode($config, true);
+            if ($report_config['hide_unit_numbers'] == 1) {
+                $transaction_list = $transaction_list->map(function ($item) use ($report_config) {
+                    $address = $item['Address'];
+                    if (count(explode('#', $address)) > 1) {
+                        $item['Address_filtered'] = explode('#', $item['Address']);
+                    } else {
+                        $item['Address_filtered'] = GlobalService::getStreetFromAddress($item['Address']);
+                    }
+
+                    return $item;
+                });
+            }
+        }
+
+        return $transaction_list;
+    }
+
+    public static function getTransactionProjectList($projectName)
+    {
+
+
+        $transaction_list = LandedTransaction::where('Project Name', $projectName)->get();
+
+        $transaction_list = self::filterProjectList($transaction_list);
+        return $transaction_list;
+    }
+
+
     public static function getProfit($project_list)
     {
 
@@ -92,6 +177,34 @@ class LandedService
     public static function getRentalData($project_name)
     {
         $rental_items = LandedRental::where('Building/Project Name', $project_name)->get();
+        $config = Cookie::get(GlobalConstant::REPORT_LANDED_CONFIG_COOKIE);
+
+        if ($config) {
+            $report_config = json_decode($config, true);
+
+
+            if (!isset($report_config['detached_house'])) {
+                $rental_items = $rental_items->filter(function ($item) use ($report_config) {
+                    return $item['Type'] != 'Detached House';
+                })->values();
+            }
+
+
+            if (!isset($report_config['semi_detached_house'])) {
+                $rental_items = $rental_items->filter(function ($item) use ($report_config) {
+                    return $item['Type'] != 'Semi-Detached House';
+                })->values();
+            }
+
+
+            if (!isset($report_config['terrace_house'])) {
+                $rental_items = $rental_items->filter(function ($item) use ($report_config) {
+                    return $item['Type'] != 'Terrace House';
+                })->values();
+            }
+        }
+
+
         return $rental_items;
     }
 
@@ -141,5 +254,13 @@ class LandedService
         $street = GlobalService::getStreetFromAddress($address);
         $nearby_items = LandedTransaction::where('Address', 'Like', '%' . $street . '%')->groupBy('Project Name')->get();
         return $nearby_items;
+    }
+
+    public static function getHistoricalRental($address)
+    {
+        $street = GlobalService::getStreetFromAddress($address);
+        $rental_data = LandedRentalPsf::where('Street Name', $street)->get();
+
+        return $rental_data;
     }
 }

@@ -36,7 +36,6 @@
             "order": [[ 0, "desc" ]],
         });
 
-
     });
 
     $('#refresh_report').on('click', function () {

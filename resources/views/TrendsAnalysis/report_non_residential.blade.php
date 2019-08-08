@@ -34,6 +34,32 @@
             font-weight: bold;
         }
 
+
+        input[type="checkbox"]:checked + label::before {
+            background-color: #428bca;
+            border-color: #428bca;
+            margin-top: 3px !important;
+        }
+
+        .checkbox label::before {
+            margin-top: 3px !important;
+        }
+
+        input[type="checkbox"]:checked + label::after {
+            color: #fff;
+        }
+
+        g[aria-labelledby="id-66-title"] {
+            display: none;
+        }
+
+        #recent_transaction, #all_past_transaction {
+            font-size: 11px;
+        }
+
+        #all_past_transaction {
+
+        }
     </style>
 
     <link href="{{ asset('plugin/icheck/skins/all.css') }}" rel="stylesheet">
@@ -45,8 +71,24 @@
 @section('contents')
 
     @php
-        $project_list = \App\Models\CommonTransaction::getTransactionProjectList($project['Project Name']);
+        // Get Config Date
+    $config_data_josn =  \Illuminate\Support\Facades\Cookie::get(\App\Service\GlobalConstant::REPORT_NON_RESIDENTIAL_COOKIE);
+    $config_data = json_decode($config_data_josn, true);
+    if ($config_data) {
+        if ($config_data['timeframe']) {
+            $timeframe = 'Last ' . $config_data['timeframe'] . ' Years';
+        } else {
+            $timeframe = 'All Years';
+        }
+    } else {
+        $timeframe = 'Last 5 Years';
+    }
 
+    // Get Project List
+     $project_detail = \App\Service\GlobalService::getProject($project['Project Name']);
+     $project_list = \App\Service\NonResidentialService::getTransactionProjectList($project['Project Name']);
+
+    echo json_encode($project_detail);die();
     @endphp
     <!-- Title, Breadcrumb Start-->
     <div class="breadcrumb-wrapper">
