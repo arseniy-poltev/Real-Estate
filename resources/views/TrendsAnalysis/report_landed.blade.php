@@ -521,6 +521,7 @@
     <!-- End Project Information -->
 
 
+    @if(\App\Service\GlobalService::checkUserPermission())
     <!-- Search by unit -->
     <div class="content">
         <div class="container">
@@ -987,7 +988,7 @@
         </div>
     @endif
     {{-- End Near by Properties--}}
-
+    @endif
 
 @endsection
 

@@ -23,3 +23,38 @@
 {{--<script src="{{ asset('js/switcher.js') }}"></script>--}}
 {{--<script src="{{ asset('js/custom.js') }}"></script>--}}
 <script src="{{ asset('js/custom.js') }}"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.0.2/js/toastr.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/4.9.1/firebase.js"></script>
+<script type="text/javascript">
+    var session_id = "{!! (Session::getId())?Session::getId():'' !!}";
+    var user_id = "{!! (Auth::user())?Auth::user()->id:'' !!}";
+
+    var config =
+        {
+            apiKey        : "AIzaSyBjpweFh63mmXB-5mOHmIVUfIrW0oN_G3A",
+            authDomain    : "fcc-book-trading-e8821.firebaseapp.com",
+            databaseURL   : "https://fcc-book-trading-e8821.firebaseio.com",
+            storageBucket : "fcc-book-trading-e8821.appspot.com",
+        };
+
+    firebase.initializeApp(config);
+
+    var database = firebase.database();
+
+    if({!! Auth::user() !!}) {
+        firebase.database().ref('/users/' + user_id + '/session_id').set(session_id);
+    }
+
+    firebase.database().ref('/users/' + user_id).on('value', function(snapshot2) {
+        var v = snapshot2.val();
+
+        if(v.session_id != session_id) {
+            toastr.warning('Your account login from another device!!', 'Warning Alert', {timeOut: 3000});
+            setTimeout(function() {
+                window.location = '/login';
+            }, 4000);
+        }
+    });
+
+</script>

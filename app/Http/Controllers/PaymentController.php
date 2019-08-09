@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Transaction;
+use App\Service\GlobalConstant;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Srmklive\PayPal\Services\ExpressCheckout;
 
 class PaymentController extends Controller
@@ -34,7 +38,7 @@ class PaymentController extends Controller
             $response = $this->provider->setExpressCheckout($cart, $recurring);
             return redirect($response['paypal_link']);
         } catch (\Exception $e) {
-            session()->put(['code' => 'danger', 'message' => 'Payment Failed!']);
+            session()->put(['code' => 'danger', 'message' => GlobalConstant::PAYMENT_FAIL_MSG]);
             return redirect('/checkout');
         }
     }
@@ -66,10 +70,20 @@ class PaymentController extends Controller
                 $status = $payment_status['PAYMENTINFO_0_PAYMENTSTATUS'];
 
                 if ($status == 'Completed') {
-                    session()->put(['code' => 'success', 'message' => 'Payment has been paid successfully!']);
+
+                    $transaction = new Transaction();
+                    $transaction->email = Auth::User()->email;
+                    $transaction->currency = 'USD';
+                    $transaction->amount = GlobalConstant::PAYMENT_SUBSCRIPTION_AMOUNT;
+                    $transaction->save();
+
+                    Auth::User()->payment_verified = true;
+                    Auth::User()->subscription_date = Carbon::now();
+                    Auth::User()->save();
+                    session()->put(['code' => 'success', 'message' => GlobalConstant::PAYMENT_SUCCESS_MSG]);
                     return redirect('/checkout');
                 } else {
-                    session()->put(['code' => 'danger', 'message' => 'Payment Failed!']);
+                    session()->put(['code' => 'danger', 'message' => GlobalConstant::PAYMENT_FAIL_MSG]);
                     return redirect('/checkout');
                 }
             }
@@ -94,7 +108,7 @@ class PaymentController extends Controller
             $data['items'] = [
                 [
                     'name' => 'Squarefoot',
-                    'price' => 99,
+                    'price' => GlobalConstant::PAYMENT_SUBSCRIPTION_AMOUNT,
                     'qty' => 1,
                 ],
             ];

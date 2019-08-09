@@ -608,7 +608,7 @@
         </div>
     </div>
     <!-- End Project Information -->
-
+    @if(\App\Service\GlobalService::checkUserPermission())
     <!-- Search by unit -->
     <div class="content">
         <div class="container">
@@ -1376,7 +1376,7 @@
         </div>
     @endif
     {{-- End Near by Properties--}}
-
+    @endif
 
     <div class="divider"></div>
     <div class="slogan p-t-50 p-b-30">
@@ -1387,69 +1387,7 @@
 @endsection
 
 @section('scripts')
-    <script src="{{ asset('js/jquery.gmap.min.js') }}"></script>
-    <script>
-        function initMap() {
-            var myLatLng = {
-                lat: parseFloat("{!! $project_detail['Latitude'] !!}"),
-                lng: parseFloat("{!! $project_detail['Longitude'] !!}")
-            }
-            var map = new google.maps.Map(document.getElementById('maps'), {
-                zoom: 18,
-                center: myLatLng
-            });
-            var geocoder = new google.maps.Geocoder();
 
-            var marker = new google.maps.Marker({
-                position: myLatLng,
-                map: map,
-            });
-
-
-            // nearby_map
-            var nearby_map = new google.maps.Map(document.getElementById('nearby_map'), {
-                zoom: 13,
-                center: myLatLng
-            });
-
-                @php
-                    $marker_index = 0;
-                @endphp
-            var locations = [
-                        @foreach($nearby_items as $item)
-                        @if($item['Project Name'] != $project['Project Name'])
-                    {
-                        position: {
-                            lat: parseFloat("{!! $item['Latitude'] !!}"),
-                            lng: parseFloat("{!! $item['Longitude'] !!}"),
-                        },
-                        marker: "{!! $item['marker'] !!}"
-                    },
-                    @endif
-                    @endforeach
-                ];
-
-            locations.push({position: myLatLng, marker: "img/marker/marker0.png"});
-            locations.forEach(function (location) {
-                var nearby_marker = new google.maps.Marker({
-                    position: location.position,
-                    icon: '/' + location.marker,
-                    map: nearby_map
-                });
-            })
-        }
-    </script>
-    {{--<script src="http://maps.google.com/maps/api/js?sensor=false&key=AIzaSyABrKRwDHO6gVhgjSBkP7Z2s98ZgHjTDGM"></script>--}}
-    <script async defer
-            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAY14CXuA_8UTgq6ipb-4Rm4C0jeCiHpY&callback=initMap"
-            type="text/javascript"></script>
-    <script src="https://www.amcharts.com/lib/4/core.js"></script>
-    <script src="https://www.amcharts.com/lib/4/charts.js"></script>
-    <script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
-    <script src="//www.amcharts.com/lib/4/plugins/regression.js"></script>
-
-    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 
 
     @include('TrendsAnalysis.footer_report_residential')

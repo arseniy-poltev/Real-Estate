@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\TrendsAnalysis;
 
 use App\Models\CommonTransaction;
+use App\Service\GlobalConstant;
+use App\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 
 class NonResidentialController extends Controller
@@ -57,5 +61,27 @@ class NonResidentialController extends Controller
         $projct_name = $request->p;
         $project = CommonTransaction::where('Project Name', $projct_name)->first();
         return view('TrendsAnalysis.report_non_residential', compact('project'));
+    }
+
+    public function refresh_setting(Request $request)
+    {
+        $config_values = $request->all();
+        unset($config_values['_token']);
+        Cookie::queue(GlobalConstant::REPORT_NON_RESIDENTIAL_COOKIE, json_encode($config_values));
+        return redirect()->back();
+    }
+
+    public function save_setting(Request $request)
+    {
+        $config_values = $request->all();
+        unset($config_values['_token']);
+        Cookie::queue(GlobalConstant::REPORT_NON_RESIDENTIAL_COOKIE, json_encode($config_values));
+        if (Auth::User()) {
+            $user = User::find(Auth::User()->id);
+            $user->report_nonresidential_config = json_encode($config_values);
+            $user->save();
+        }
+
+        return 'success';
     }
 }

@@ -18,3 +18,4 @@
 <link href="{{ asset('css/switcher.css') }}" rel="stylesheet">
 <link href="{{ asset('css/spectrum.css') }}" rel="stylesheet">
 <link href="{{ asset('css/search-results.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">

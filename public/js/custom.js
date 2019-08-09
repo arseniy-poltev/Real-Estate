@@ -576,28 +576,28 @@ jQuery(document).ready(function () {
 	/*----------------------------------------------------*/
 		
 	//Google map
-$(function(){
-    $(window).load(function(){
-        jQuery('#mapss').gMap({
-            address: "3A Bright Hill Crescent ",
-            zoom: 20,
-            controls: {
-                panControl: true,
-                zoomControl: true,
-                mapTypeControl: true,
-                scaleControl: true,
-                streetViewControl: true,
-                overviewMapControl: true
-            },
-            markers: [{
-                latitude: 23.838631,
-                longitude: 90.367581,
-                html: "<h4>FIFO Themes</h4>Wordpress, HTML5/CSS Themes",
-                popup: true
-            }]
-        });
-    });
-});
+// $(function(){
+//     $(window).load(function(){
+//         jQuery('#mapss').gMap({
+//             address: "3A Bright Hill Crescent ",
+//             zoom: 20,
+//             controls: {
+//                 panControl: true,
+//                 zoomControl: true,
+//                 mapTypeControl: true,
+//                 scaleControl: true,
+//                 streetViewControl: true,
+//                 overviewMapControl: true
+//             },
+//             markers: [{
+//                 latitude: 23.838631,
+//                 longitude: 90.367581,
+//                 html: "<h4>FIFO Themes</h4>Wordpress, HTML5/CSS Themes",
+//                 popup: true
+//             }]
+//         });
+//     });
+// });
 
 
 

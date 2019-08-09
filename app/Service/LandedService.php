@@ -136,6 +136,7 @@ class LandedService
                         'sold_on' => ($item[$i]['Sale Date']),
                         'bought_on' => ($item[$i - 1]['Sale Date']),
                         'Address' => $item[$i - 1]['Address'],
+                        'Address_filtered' => $item[$i - 1]['Address'],
                         'unit_area' => number_format(round($item[$i - 1]['Area (sqm)'] * 10.76)),
                         'sale_price_psf' => number_format($item[$i]['Unit Price ($ psf)']),
                         'purchase_price_psf' => number_format($item[$i - 1]['Unit Price ($ psf)']),

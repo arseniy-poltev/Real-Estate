@@ -1,3 +1,78 @@
+<script src="{{ asset('js/custom.js') }}"></script>
+<script src="https://www.amcharts.com/lib/4/core.js"></script>
+<script src="https://www.amcharts.com/lib/4/charts.js"></script>
+<script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+
+<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+
+        $('.datatable-component').dataTable({
+            "searching": false,
+            responsive: true
+        });
+
+        $('.sales-datatable-component').dataTable({
+            "searching": false,
+            responsive: true,
+            "order": [[0, "desc"]],
+        });
+
+        $('.rental-container-datatable-component').dataTable({
+            "searching": false,
+            responsive: true,
+            "order": [[0, "desc"]],
+        });
+
+        $('.rental-yield-datatable-component').dataTable({
+            "searching": false,
+            responsive: true,
+            "order": [[0, "desc"]],
+        });
+
+        $('.unit-size-datatable-component').dataTable({
+            "searching": false,
+            responsive: true,
+        });
+
+        $('.profitable-datatable-component').dataTable({
+            "searching": false,
+            responsive: true,
+            "order": [[0, "desc"]],
+        });
+
+    });
+
+
+    $('#refresh_report').on('click', function () {
+        var settig_value = {};
+        $.each($('.report_setting_form').serializeArray(), function () {
+            settig_value[this.name] = this.value;
+        });
+
+    });
+
+
+    /* Set Report Configuration */
+        @php
+            $config_data = \Illuminate\Support\Facades\Cookie::get(\App\Service\GlobalConstant::REPORT_LANDED_CONFIG_COOKIE);
+        @endphp
+    var config_data = '{!! $config_data !!}';
+
+    if (config_data) {
+        $.each(JSON.parse(config_data), function (key, value) {
+            $('input[name="' + key + '"]').val(value);
+            $('input[name="' + key + '"]').attr('checked', value);
+            $('select[name="' + key + '"]').val(value);
+        });
+    }
+    /* End report Configuration */
+</script>
+
+
+@if(\App\Service\GlobalService::checkUserPermission())
 <script>
     function initMap() {
         var myLatLng = {
@@ -53,78 +128,8 @@
 <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAY14CXuA_8UTgq6ipb-4Rm4C0jeCiHpY&callback=initMap"
         type="text/javascript"></script>
-<script src="{{ asset('js/custom.js') }}"></script>
-<script src="https://www.amcharts.com/lib/4/core.js"></script>
-<script src="https://www.amcharts.com/lib/4/charts.js"></script>
-<script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
-
-<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
 
 <script>
-    $(document).ready(function () {
-
-        $('.datatable-component').dataTable({
-            "searching": false,
-            responsive: true
-        });
-
-        $('.sales-datatable-component').dataTable({
-            "searching": false,
-            responsive: true,
-            "order": [[0, "desc"]],
-        });
-
-        $('.rental-container-datatable-component').dataTable({
-            "searching": false,
-            responsive: true,
-            "order": [[0, "desc"]],
-        });
-
-        $('.rental-yield-datatable-component').dataTable({
-            "searching": false,
-            responsive: true,
-            "order": [[0, "desc"]],
-        });
-
-        $('.unit-size-datatable-component').dataTable({
-            "searching": false,
-            responsive: true,
-        });
-
-        $('.profitable-datatable-component').dataTable({
-            "searching": false,
-            responsive: true,
-            "order": [[0, "desc"]],
-        });
-
-    });
-
-
-    $('#refresh_report').on('click', function () {
-        var settig_value = {};
-        $.each($('.report_setting_form').serializeArray(), function () {
-            settig_value[this.name] = this.value;
-        });
-
-        console.log(settig_value);
-    });
-
-
-    /* Set Report Configuration */
-        @php
-            $config_data = \Illuminate\Support\Facades\Cookie::get(\App\Service\GlobalConstant::REPORT_LANDED_CONFIG_COOKIE);
-        @endphp
-        var config_data = '{!! $config_data !!}';
-
-        if (config_data) {
-            $.each(JSON.parse(config_data), function (key, value) {
-                $('input[name="' + key + '"]').val(value);
-                $('input[name="' + key + '"]').attr('checked', value);
-                $('select[name="' + key + '"]').val(value);
-            });
-        }
-    /* End report Configuration */
 
     /* Buyer Profile Chart */
     am4core.ready(function () {
@@ -508,15 +513,6 @@
 
             $histogram_data = $story_list->groupBy('month')->values();
         @endphp
-        // Add data
-        {{--chart.data = [--}}
-            {{--@foreach($story_list as $item)--}}
-            {{--{--}}
-            {{--"date": '{!! ($item['Sale Date']) !!}',--}}
-            {{--"value": '{!! $item['Unit Price ($ psf)'] !!}',--}}
-            {{--},--}}
-            {{--@endforeach--}}
-            {{--];--}}
 
             chart.data = [
             @foreach($histogram_data as $item)
@@ -530,106 +526,8 @@
             @endforeach
         ];
 
-        console.log(chart.data)
-        // chart.dateFormatter.inputDateFormat = "yyyy-MM";
-        //
-        // // Create axes
-        // var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
-        // dateAxis.title.text = 'Sale Date';
-        // var valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-        // valueAxis.title.text = 'Price (S$ psf)';
-        // // Create series
-        // var series = chart.series.push(new am4charts.LineSeries());
-        // series.dataFields.valueY = "average";
-        // series.dataFields.dateX = "date";
-        // series.tooltipText = "{date} \n Maximum: {max} \n Average: {average} \n Minimum: {min} \n Volume: {value}";
-        // series.strokeWidth = 2;
-        // // series.minBulletDistance = 15;
-        // series.strokeOpacity = 1;
-        // series.name = "Price (S$ psf)";
-        // series.stroke = am4core.color("#c00");
-        //
-        //
-        //
-        //
-        //
-        // // Drop-shaped tooltips
-        // series.tooltip.background.cornerRadius = 20;
-        // series.tooltip.background.strokeOpacity = 0;
-        // series.tooltip.pointerOrientation = "vertical";
-        // series.tooltip.label.minWidth = 40;
-        // series.tooltip.label.minHeight = 40;
-        // series.tooltip.label.textAlign = "left";
-        // series.tooltip.label.textValign = "middle";
-        //
-        //
-        //
-        //
-        // var series_max = chart.series.push(new am4charts.LineSeries());
-        // series_max.dataFields.valueY = "max";
-        // series_max.dataFields.dateX = "date";
-        //
-        // series_max.sequencedInterpolation = true;
-        // series_max.fillOpacity = 0.3;
-        // series_max.defaultState.transitionDuration = 1000;
-        // series_max.tensionX = 0.8;
-        //
-        // // series_max.stroke = am4core.color("#c00");
-        //
-        // var series_min = chart.series.push(new am4charts.LineSeries());
-        // series_min.dataFields.valueY = "min";
-        // series_min.dataFields.dateX = "date";
-        //
-        // series_min.sequencedInterpolation = true;
-        // series_min.defaultState.transitionDuration = 1500;
-        // series_min.stroke = chart.colors.getIndex(6);
-        // series_min.tensionX = 0.8;
-        //
-        // // Make a panning cursor
-        // chart.cursor = new am4charts.XYCursor();
-        // chart.cursor.behavior = "panXY";
-        // chart.cursor.xAxis = dateAxis;
-        // chart.cursor.snapToSeries = series;
-        //
-        // // Create vertical scrollbar and place it before the value axis
-        // chart.scrollbarY = new am4core.Scrollbar();
-        // chart.scrollbarY.parent = chart.leftAxesContainer;
-        // chart.scrollbarY.toBack();
-        //
-        // // Create a horizontal scrollbar with previe and place it underneath the date axis
-        // chart.scrollbarX = new am4charts.XYChartScrollbar();
-        // chart.scrollbarX.series.push(series);
-        // chart.scrollbarX.parent = chart.bottomAxesContainer;
-        //
-        // // chart.events.on("ready", function () {
-        // //     dateAxis.zoom({start:0.79, end:1});
-        // // });
-        //
-        // // var regseries2 = chart.series.push(new am4charts.LineSeries());
-        // // regseries2.dataFields.valueY = "value";
-        // // regseries2.dataFields.dateX = "date";
-        // // regseries2.strokeWidth = 2;
-        // // regseries2.name = "Polynomial Regression";
-        // // regseries2.tensionX = 0.8;
-        // // regseries2.tensionY = 0.8;
-        // // regseries2.stroke = am4core.color("#c00");
-        // //
-        // // var reg2 = regseries2.plugins.push(new am4plugins_regression.Regression());
-        // // reg2.method = "polynomial";
-        // //
-        // // chart.legend = new am4charts.Legend();
-        //
-        //
-
-
-
-
-
 
         chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
-
-
-
 
         var dateAxis = chart.xAxes.push(new am4charts.DateAxis());
 
@@ -706,3 +604,28 @@
     });
 
 </script>
+@else
+    <script>
+        function initMap() {
+            var myLatLng = {
+                lat: parseFloat("{!! $project_detail['Latitude'] !!}"),
+                lng: parseFloat("{!! $project_detail['Longitude'] !!}")
+            };
+            var map = new google.maps.Map(document.getElementById('maps'), {
+                zoom: 18,
+                center: myLatLng
+            });
+            var geocoder = new google.maps.Geocoder();
+
+            var marker = new google.maps.Marker({
+                position: myLatLng,
+                map: map,
+            });
+        }
+    </script>
+    {{--<script src="http://maps.google.com/maps/api/js?sensor=false&key=AIzaSyABrKRwDHO6gVhgjSBkP7Z2s98ZgHjTDGM"></script>--}}
+    <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAY14CXuA_8UTgq6ipb-4Rm4C0jeCiHpY&callback=initMap"
+            type="text/javascript"></script>
+    <script>
+@endif

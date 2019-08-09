@@ -1,4 +1,110 @@
+{{--<script src="{{ asset('js/jquery.gmap.min.js') }}"></script>--}}
 
+<script src="https://www.amcharts.com/lib/4/core.js"></script>
+<script src="https://www.amcharts.com/lib/4/charts.js"></script>
+<script src="https://www.amcharts.com/lib/4/themes/animated.js"></script>
+<script src="//www.amcharts.com/lib/4/plugins/regression.js"></script>
+
+<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
+
+<script>
+
+    $('#refresh_report').on('click', function () {
+        var settig_value = {};
+        $.each($('.report_setting_form').serializeArray(), function () {
+            settig_value[this.name] = this.value;
+        });
+
+    });
+
+
+    /* Set Report Configuration */
+        @php
+            $config_data = \Illuminate\Support\Facades\Cookie::get(\App\Service\GlobalConstant::REPORT_RESIDENTIAL_CONFIG_COOKIE);
+        @endphp
+    var config_data = '{!! $config_data !!}';
+
+    if (config_data) {
+        $.each(JSON.parse(config_data), function (key, value) {
+            $('input[name="' + key + '"]').val(value);
+            $('input[name="' + key + '"]').attr('checked', value);
+            $('select[name="' + key + '"]').val(value);
+        });
+    }
+    /* End report Configuration */
+
+
+    $('#save_report_settings').on('click', function () {
+        $.ajax({
+            url: "{{ url('/trends-and-analysis/residential/report/save_setting') }}",
+            type: 'post',
+            data: $('.report_setting_form').serializeArray(),
+            success: function () {
+                window.location.reload(true);
+            }
+        })
+    });
+</script>
+
+
+
+@if(\App\Service\GlobalService::checkUserPermission())
+<script>
+    function initMap() {
+        var myLatLng = {
+            lat: parseFloat("{!! $project_detail['Latitude'] !!}"),
+            lng: parseFloat("{!! $project_detail['Longitude'] !!}")
+        };
+        var map = new google.maps.Map(document.getElementById('maps'), {
+            zoom: 18,
+            center: myLatLng
+        });
+        var geocoder = new google.maps.Geocoder();
+
+        var marker = new google.maps.Marker({
+            position: myLatLng,
+            map: map,
+        });
+
+
+        // nearby_map
+        var nearby_map = new google.maps.Map(document.getElementById('nearby_map'), {
+            zoom: 13,
+            center: myLatLng
+        });
+
+            @php
+                $marker_index = 0;
+            @endphp
+        var locations = [
+                    @foreach($nearby_items as $item)
+                    @if($item['Project Name'] != $project['Project Name'])
+                {
+                    position: {
+                        lat: parseFloat("{!! $item['Latitude'] !!}"),
+                        lng: parseFloat("{!! $item['Longitude'] !!}"),
+                    },
+                    marker: "{!! $item['marker'] !!}"
+                },
+                @endif
+                @endforeach
+            ];
+
+        locations.push({position: myLatLng, marker: "img/marker/marker0.png"});
+        locations.forEach(function (location) {
+            var nearby_marker = new google.maps.Marker({
+                position: location.position,
+                icon: '/' + location.marker,
+                map: nearby_map
+            });
+        })
+    }
+</script>
+{{--<script src="http://maps.google.com/maps/api/js?sensor=false&key=AIzaSyABrKRwDHO6gVhgjSBkP7Z2s98ZgHjTDGM"></script>--}}
+<script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAY14CXuA_8UTgq6ipb-4Rm4C0jeCiHpY&callback=initMap"
+        type="text/javascript"></script>
 <script>
     $(document).ready(function () {
 
@@ -37,45 +143,9 @@
         });
 
     });
+</script>
 
-    $('#refresh_report').on('click', function () {
-        var settig_value = {};
-        $.each($('.report_setting_form').serializeArray(), function () {
-            settig_value[this.name] = this.value;
-        });
-
-        console.log(settig_value);
-    });
-
-
-    /* Set Report Configuration */
-        @php
-            $config_data = \Illuminate\Support\Facades\Cookie::get(\App\Service\GlobalConstant::REPORT_RESIDENTIAL_CONFIG_COOKIE);
-        @endphp
-    var config_data = '{!! $config_data !!}';
-
-    if (config_data) {
-        $.each(JSON.parse(config_data), function (key, value) {
-            $('input[name="' + key + '"]').val(value);
-            $('input[name="' + key + '"]').attr('checked', value);
-            $('select[name="' + key + '"]').val(value);
-        });
-    }
-    /* End report Configuration */
-
-
-    $('#save_report_settings').on('click', function () {
-        $.ajax({
-            url: "{{ url('/trends-and-analysis/residential/report/save_setting') }}",
-            type: 'post',
-            data: $('.report_setting_form').serializeArray(),
-            success: function () {
-                window.location.reload(true);
-            }
-        })
-    });
-
-
+<script>
     /* Buyer profile Chart */
     am4core.ready(function () {
 
@@ -588,7 +658,6 @@
             @endforeach
         ];
 
-        console.log(chart.data)
         // chart.dateFormatter.inputDateFormat = "yyyy-MM";
         //
         // // Create axes
@@ -819,3 +888,28 @@
         }
     })
 </script>
+@else
+    <script>
+        function initMap() {
+            var myLatLng = {
+                lat: parseFloat("{!! $project_detail['Latitude'] !!}"),
+                lng: parseFloat("{!! $project_detail['Longitude'] !!}")
+            };
+            var map = new google.maps.Map(document.getElementById('maps'), {
+                zoom: 18,
+                center: myLatLng
+            });
+            var geocoder = new google.maps.Geocoder();
+
+            var marker = new google.maps.Marker({
+                position: myLatLng,
+                map: map,
+            });
+        }
+    </script>
+    {{--<script src="http://maps.google.com/maps/api/js?sensor=false&key=AIzaSyABrKRwDHO6gVhgjSBkP7Z2s98ZgHjTDGM"></script>--}}
+    <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAY14CXuA_8UTgq6ipb-4Rm4C0jeCiHpY&callback=initMap"
+            type="text/javascript"></script>
+    <script>
+@endif

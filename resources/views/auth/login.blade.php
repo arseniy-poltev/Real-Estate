@@ -53,7 +53,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-8 col-md-8 col-sm-6 col-xs-12" id="contact-form">
-                    <h3 class="title">Login</h3>
+                    <h3 class="title">&nbsp;</h3>
                     <p>
                         In order to search data, you have to register.
                     </p>

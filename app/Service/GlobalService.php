@@ -3,8 +3,9 @@
 namespace App\Service;
 
 
-
+use Auth;
 use App\Models\Projects;
+use Carbon\Carbon;
 
 class GlobalService
 {
@@ -68,5 +69,33 @@ class GlobalService
             return $item;
         })->sortBy('distance');
         return $nearby_items;
+    }
+
+    public static function checkUserPermission()
+    {
+        if (Auth::guest()) {
+            return false;
+        } else {
+            $user = Auth::User();
+            if (!$user->hasVerifiedEmail()) {
+                return false;
+            } else {
+                if ($user->payment_verified) {
+                    $subscription_expired = Carbon::now()->addYears(1);
+                    if ($subscription_expired < Carbon::now()) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                } else {
+                    $register_datediff = Carbon::now()->diffInHours($user->created_at);
+                    if ($register_datediff > 24) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+            }
+        }
     }
 }
